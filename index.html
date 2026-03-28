@@ -119,19 +119,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .tracker-top{padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start}
 .tracker-timer{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);background:rgba(10,10,10,0.7);backdrop-filter:blur(12px);padding:7px 14px;border-radius:8px;border:0.5px solid var(--border)}
 .tracker-close{width:36px;height:36px;border-radius:10px;background:rgba(10,10,10,0.7);backdrop-filter:blur(12px);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--red);font-size:16px}
-.tracker-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.rep-counter{font-family:var(--font-display);font-weight:800;font-size:96px;color:var(--red);text-shadow:0 0 60px var(--red-glow);transition:transform 120ms ease-out}
-.rep-counter.pulse{transform:scale(1.18)}
-.rep-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-top:-4px}
-.form-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:500;margin-top:14px;transition:all .3s var(--ease)}
-.form-pill.good{background:rgba(0,200,100,0.12);color:#00c864;box-shadow:0 0 15px rgba(0,200,100,0.1)}
-.form-pill.bad{background:rgba(255,45,45,0.12);color:var(--red);box-shadow:0 0 15px var(--red-glow)}
-.form-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-.tracker-bottom{padding:14px 16px 24px;background:linear-gradient(to top,rgba(10,10,10,0.9),transparent)}
-.tracker-metrics{display:flex;gap:12px;margin-bottom:14px}
-.t-metric{flex:1;text-align:center;background:rgba(10,10,10,0.5);border-radius:10px;padding:10px 4px;border:0.5px solid var(--border)}
-.t-metric .tm-val{font-family:var(--font-display);font-weight:800;font-size:20px;color:var(--text)}
-.t-metric .tm-label{font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-top:2px}
+.vid-reps-container{position:absolute;left:24px;bottom:100px;display:flex;flex-direction:column;align-items:center}
+.vid-reps-circle{width:86px;height:86px;border:5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:38px;font-weight:800;color:#fff;background:rgba(0,0,0,0.3);backdrop-filter:blur(8px);transition:transform 0.1s}
+.vid-reps-circle.pulse{transform:scale(1.15)}
+.vid-reps-label{font-family:var(--font-display);font-size:18px;font-weight:700;color:#fff;margin-top:12px;text-shadow:0 2px 4px rgba(0,0,0,0.6)}
+
+.vid-gauge-container{position:absolute;right:24px;bottom:100px;width:48px;height:160px;background:rgba(0,0,0,0.4);border-radius:30px;border:1.5px solid rgba(255,255,255,0.2);backdrop-filter:blur(8px);padding:4px}
+.vid-gauge-inner{width:100%;height:100%;border-radius:24px;overflow:hidden;display:flex;align-items:flex-end}
+.vid-gauge-fill{width:100%;height:0%;background:#00E5A0;border-radius:20px;transition:height 0.1s,background 0.2s;box-shadow:inset 0 0 10px rgba(255,255,255,0.2)}
+.vid-gauge-fill.bad{background:var(--red)}
+
+.vid-progress-bar{position:absolute;left:24px;right:24px;bottom:70px;height:8px;background:rgba(255,255,255,0.2);border-radius:4px;overflow:hidden;backdrop-filter:blur(4px);display:flex;align-items:center;padding:0 2px}
+.vid-progress-fill{height:4px;width:30%;background:#fff;border-radius:2px;box-shadow:0 0 8px rgba(255,255,255,0.5)}
+
+.form-pill{position:absolute;top:70px;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:500;transition:all .3s var(--ease);z-index:10}
 .stop-btn{width:100%;padding:14px;background:rgba(255,45,45,0.12);border:1px solid rgba(255,45,45,0.3);border-radius:12px;font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--red);cursor:pointer;transition:background .2s}
 .stop-btn:active{background:rgba(255,45,45,0.25)}
 .placement-guide{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,10,0.75);transition:opacity .3s}
@@ -291,22 +292,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     </div>
     <p class="guide-text">Position your full body in frame.<br>Place your phone to the side, 2–3m away.</p>
   </div>
-  <div class="tracker-ui">
+  <div class="tracker-ui" id="trackerUi">
     <div class="tracker-top">
       <div class="tracker-timer" id="timerDisplay">00:00</div>
       <div class="tracker-close" id="closeTracker">✕</div>
     </div>
-    <div class="tracker-center">
-      <div class="rep-counter" id="repDisplay">0</div>
-      <div class="rep-label">Perfect Reps</div>
-      <div class="form-pill good" id="formPill"><span class="dot"></span><span id="formText">Waiting...</span></div>
+    
+    <div class="form-pill good" id="formPill"><span class="dot"></span><span id="formText">Waiting...</span></div>
+
+    <div class="vid-reps-container">
+      <div class="vid-reps-circle" id="repDisplay">0</div>
+      <div class="vid-reps-label">Push-Ups</div>
     </div>
-    <div class="tracker-bottom">
-      <div class="tracker-metrics">
-        <div class="t-metric"><div class="tm-val" id="tmScore">—</div><div class="tm-label">Form Score</div></div>
-        <div class="t-metric"><div class="tm-val" id="tmBad">0</div><div class="tm-label">Bad Reps</div></div>
-        <div class="t-metric"><div class="tm-val" id="tmDepth">—</div><div class="tm-label">Avg Depth</div></div>
+    
+    <div class="vid-gauge-container">
+      <div class="vid-gauge-inner">
+        <div class="vid-gauge-fill" id="depthGauge"></div>
       </div>
+    </div>
+
+    <div class="vid-progress-bar">
+      <div class="vid-progress-fill"></div>
+    </div>
+
+    <div class="tracker-bottom" style="position:absolute;bottom:0;left:0;right:0;background:transparent;padding:16px;">
       <button class="stop-btn" id="stopBtn">■ Stop Session</button>
     </div>
   </div>
@@ -487,9 +496,8 @@ function startTrackerSession(){
   repCount=0;badReps=0;repLog=[];repState='IDLE';minElbow=180;formScores=[];
   bodyDetected=false;
   document.getElementById('repDisplay').textContent='0';
-  document.getElementById('tmBad').textContent='0';
-  document.getElementById('tmScore').textContent='—';
-  document.getElementById('tmDepth').textContent='—';
+  document.getElementById('depthGauge').style.height='0%';
+  document.getElementById('depthGauge').className='vid-gauge-fill';
   document.getElementById('formText').textContent='Waiting...';
   document.getElementById('formPill').className='form-pill good';
   document.getElementById('placementGuide').classList.remove('hidden');
@@ -551,8 +559,6 @@ function initPose(){
     if(results.poseLandmarks){
       if(!bodyDetected){bodyDetected=true;document.getElementById('placementGuide').classList.add('hidden');}
       const lm=results.poseLandmarks;
-
-      drawConnectors(ctx,lm,POSE_CONNECTIONS,{color:'rgba(255,45,45,0.35)',lineWidth:2});
       
       const lElbow=calculateAngle(lm[11],lm[13],lm[15]);
       const rElbow=calculateAngle(lm[12],lm[14],lm[16]);
@@ -562,21 +568,38 @@ function initPose(){
       const hipAngle=(lHip+rHip)/2;
       currentElbowAngle=elbowAngle;currentHipAngle=hipAngle;
 
-      const hipOk=hipAngle>=155;
-      const goodColor='#FF2D2D',badColor='#FF6B6B';
+      const hipOk=hipAngle>=155&&lm[0].y<((lm[11].y+lm[12].y)/2)+0.06;
+      const drawColor=hipOk?'rgba(255,255,255,0.85)':'rgba(255,45,45,0.9)';
       
-      [11,12,13,14,15,16].forEach(i=>{
-        ctx.beginPath();ctx.arc(lm[i].x*canvas.width,lm[i].y*canvas.height,5,0,2*Math.PI);
-        ctx.fillStyle=goodColor;ctx.fill();
-      });
-      [23,24,25,26].forEach(i=>{
-        ctx.beginPath();ctx.arc(lm[i].x*canvas.width,lm[i].y*canvas.height,5,0,2*Math.PI);
-        ctx.fillStyle=hipOk?goodColor:badColor;ctx.fill();
+      const mShoulder={x:(lm[11].x+lm[12].x)/2, y:(lm[11].y+lm[12].y)/2};
+      // For pushups, tracking the back line: Shoulder -> Hip -> Knee
+      const mHip={x:(lm[23].x+lm[24].x)/2, y:(lm[23].y+lm[24].y)/2};
+      const mKnee={x:(lm[25].x+lm[26].x)/2, y:(lm[25].y+lm[26].y)/2};
+
+      // Draw custom skeleton line
+      ctx.beginPath();
+      ctx.moveTo(mShoulder.x*canvas.width, mShoulder.y*canvas.height);
+      ctx.lineTo(mHip.x*canvas.width, mHip.y*canvas.height);
+      ctx.lineTo(mKnee.x*canvas.width, mKnee.y*canvas.height);
+      ctx.lineCap='round';
+      ctx.lineJoin='round';
+      ctx.strokeStyle=drawColor;
+      ctx.lineWidth=7;
+      ctx.stroke();
+
+      // Draw nodes
+      [mShoulder, mHip, mKnee].forEach(p=>{
+        ctx.beginPath();ctx.arc(p.x*canvas.width, p.y*canvas.height, 6, 0, 2*Math.PI);
+        ctx.fillStyle=drawColor;ctx.fill();
+        ctx.lineWidth=1;ctx.strokeStyle='#000';ctx.stroke();
       });
 
-      ctx.font='bold 14px "DM Sans"';ctx.fillStyle='#fff';
-      ctx.fillText(Math.round(lElbow)+'°',lm[13].x*canvas.width+10,lm[13].y*canvas.height);
-      ctx.fillText(Math.round(rElbow)+'°',lm[14].x*canvas.width+10,lm[14].y*canvas.height);
+      // Update depth gauge visually
+      const depthP=Math.max(0,Math.min(100,(170-elbowAngle)/80*100));
+      const gauge=document.getElementById('depthGauge');
+      gauge.style.height=depthP+'%';
+      if(hipOk) gauge.className='vid-gauge-fill';
+      else gauge.className='vid-gauge-fill bad';
 
       processRep(elbowAngle,hipAngle,lElbow,rElbow,lm);
     }
