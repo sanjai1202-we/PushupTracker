@@ -352,7 +352,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   </div>
   <div class="summary-title" id="summaryTitle">Session Complete!</div>
   <div class="summary-grid" id="summaryGrid"></div>
-  <button class="btn-primary" id="summarySave">Save & Continue</button>
+  <div style="display:flex;gap:12px;width:100%">
+    <button class="btn-primary" id="summaryDiscard" style="flex:1;background:rgba(255,45,45,0.15);color:var(--red);border:1px solid rgba(255,45,45,0.3)">Discard</button>
+    <button class="btn-primary" id="summarySave" style="flex:2">Save & Continue</button>
+  </div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -390,6 +393,7 @@ let currentScreen='dashboard',pose=null,camera=null,timerInterval=null;
 let sessionStart=0,repCount=0,badReps=0,repLog=[];
 let repState='IDLE',minElbow=180,formScores=[];
 let currentHipAngle=180,currentElbowAngle=180,bodyDetected=false;
+let pendingSession=null;
 
 /* ═══ UTILITY ═══ */
 function uuid(){return 'xxxx-xxxx'.replace(/x/g,()=>(Math.random()*16|0).toString(16))}
@@ -522,8 +526,7 @@ function endSession(){
   if(camera){camera.stop();camera=null;}
   const duration=Math.floor((Date.now()-sessionStart)/1000);
   const avgScore=formScores.length?Math.round(formScores.reduce((a,b)=>a+b,0)/formScores.length):0;
-  const session={id:uuid(),ts:Date.now(),reps:repCount,badReps,duration,formScore:avgScore,repLog};
-  const sessions=getSessions();sessions.push(session);saveSessions(sessions);
+  pendingSession={id:uuid(),ts:Date.now(),reps:repCount,badReps,duration,formScore:avgScore,repLog};
 
   speak(`Session complete. ${repCount} perfect reps. Great work.`);
 
@@ -537,7 +540,19 @@ function endSession(){
   document.getElementById('summaryOverlay').classList.add('active');
 }
 
+document.getElementById('summaryDiscard').onclick=()=>{
+  pendingSession=null;
+  document.getElementById('summaryOverlay').classList.remove('active');
+  showScreen('dashboard');refreshDashboard();
+};
+
 document.getElementById('summarySave').onclick=()=>{
+  if(pendingSession){
+    const sessions=getSessions();
+    sessions.push(pendingSession);
+    saveSessions(sessions);
+    pendingSession=null;
+  }
   document.getElementById('summaryOverlay').classList.remove('active');
   showScreen('dashboard');refreshDashboard();
 };
@@ -568,7 +583,7 @@ function initPose(){
       const hipAngle=(lHip+rHip)/2;
       currentElbowAngle=elbowAngle;currentHipAngle=hipAngle;
 
-      const hipOk=hipAngle>=155&&lm[0].y<((lm[11].y+lm[12].y)/2)+0.06;
+      const hipOk=hipAngle>=145; // Relaxed slightly to account for regular body curve, removed strict face orientation.
       const drawColor=hipOk?'rgba(255,255,255,0.85)':'rgba(255,45,45,0.9)';
       
       const mShoulder={x:(lm[11].x+lm[12].x)/2, y:(lm[11].y+lm[12].y)/2};
@@ -625,30 +640,28 @@ function processRep(elbowAngle,hipAngle,lElbow,rElbow,lm){
   if(elbowAngle<minElbow)minElbow=elbowAngle;
 
   let formGood=true,feedback='Perfect form';
-  if(hipAngle<155){formGood=false;feedback='Keep hips level';}
-  else if(lm[0].y>((lm[11].y+lm[12].y)/2)+0.05){formGood=false;feedback='Head dropping';}
+  if(hipAngle<145){formGood=false;feedback='Keep hips level';}
   else if(Math.abs(lElbow-rElbow)>25){formGood=false;feedback='Balance your arms';}
 
   pill.className='form-pill '+(formGood?'good':'bad');
   formText.textContent=feedback;
 
   if(!formGood&&repState==='DOWN'){
-    if(hipAngle<155)speak('Keep hips level');
+    if(hipAngle<145)speak('Keep hips level');
   }
 
   if(repState==='IDLE'||repState==='UP'){
     if(elbowAngle<90){repState='DOWN';minElbow=elbowAngle;}
   }else if(repState==='DOWN'){
     if(elbowAngle>160){
-      const hipOk=hipAngle>=160&&hipAngle<=180;
-      const noseOk=!(lm[0].y>((lm[11].y+lm[12].y)/2)+0.05);
+      const hipOk=hipAngle>=145;
       
       const elbowSym=Math.max(0,100-Math.abs(lElbow-rElbow)*100/15)*0.4;
       const hipScore=(hipAngle>=170?100:Math.max(0,(hipAngle-140)*100/30))*0.4;
       const depthScore=(minElbow<=80?100:Math.max(0,(110-minElbow)*100/30))*0.2;
       const totalScore=Math.round(elbowSym+hipScore+depthScore);
 
-      if(hipOk&&noseOk){
+      if(hipOk){
         repCount++;
         formScores.push(totalScore);
         repLog.push({ts:Date.now(),elbowAngle:Math.round(elbowAngle),hipAngle:Math.round(hipAngle),score:totalScore,type:'perfect'});
@@ -678,6 +691,15 @@ function processRep(elbowAngle,hipAngle,lElbow,rElbow,lm){
 }
 
 /* ═══ HISTORY ═══ */
+window.deleteSession=function(id){
+  if(confirm('Delete this session permanently?')){
+    let sessions=getSessions();
+    sessions=sessions.filter(s=>s.id!==id);
+    saveSessions(sessions);
+    refreshHistory();
+  }
+};
+
 function refreshHistory(){
   const cont=document.getElementById('historyList');
   const sessions=getSessions();
@@ -687,7 +709,7 @@ function refreshHistory(){
     const dt=new Date(s.ts);
     const dur=s.duration||0;
     const div=document.createElement('div');
-    div.innerHTML=`<div class="session-item" style="cursor:pointer" data-idx="${idx}"><div class="session-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v16M18 4v16M6 12h12M4 8h4M16 8h4M4 16h4M16 16h4"/></svg></div><div class="session-info"><div class="si-title">${s.reps} Perfect · ${s.badReps||0} Bad</div><div class="si-meta">${dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} · ${Math.floor(dur/60)}m ${dur%60}s · ${s.formScore}%</div></div><div class="session-reps">${s.reps}</div></div><div class="rep-log" id="rlog-${idx}">${(s.repLog||[]).map((r,ri)=>`<div class="rep-log-item"><span>Rep ${ri+1} — ${r.elbowAngle}° · ${r.hipAngle}°</span><span class="badge ${r.type==='perfect'?'perfect':'bad-rep'}">${r.type}</span></div>`).join('')}</div>`;
+    div.innerHTML=`<div class="session-item" style="cursor:pointer" data-idx="${idx}"><div class="session-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v16M18 4v16M6 12h12M4 8h4M16 8h4M4 16h4M16 16h4"/></svg></div><div class="session-info"><div class="si-title" style="display:flex;justify-content:space-between;align-items:center;"><span>${s.reps} Perfect · ${s.badReps||0} Bad</span><button onclick="event.stopPropagation();deleteSession('${s.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div><div class="si-meta">${dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} · ${Math.floor(dur/60)}m ${dur%60}s · ${s.formScore}%</div></div><div class="session-reps">${s.reps}</div></div><div class="rep-log" id="rlog-${idx}">${(s.repLog||[]).map((r,ri)=>`<div class="rep-log-item"><span>Rep ${ri+1} — ${r.elbowAngle}° · ${r.hipAngle}°</span><span class="badge ${r.type==='perfect'?'perfect':'bad-rep'}">${r.type}</span></div>`).join('')}</div>`;
     div.querySelector('.session-item').onclick=()=>{document.getElementById('rlog-'+idx).classList.toggle('open');};
     cont.appendChild(div);
   });
