@@ -1304,11 +1304,31 @@ document.getElementById('startBtn').onclick=()=>{
         pose=new Pose({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${f}`});
         pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.6,minTrackingConfidence:0.5});
         pose.onResults(processFrame);
-        try{
-            camera=new Camera(video,{onFrame:async()=>{if(pose)await pose.send({image:video})},width:640,height:480,facingMode:'environment'});
-            camera.start();
-        }catch(e){alert('Camera error: '+e.message);}
-    }else{camera.start();}
+        try {
+            camera = new Camera(video, {
+                onFrame: async () => { if(pose) await pose.send({image:video}) },
+                width: 640, height: 480, facingMode: 'environment'
+            });
+            camera.start().catch((err) => {
+                console.log("Rear camera failed, trying front. Error:", err);
+                camera = new Camera(video, {
+                    onFrame: async () => { if(pose) await pose.send({image:video}) },
+                    width: 640, height: 480, facingMode: 'user'
+                });
+                camera.start().catch((e) => {
+                    alert('Camera could not start. Ensure permissions are granted. Error: ' + e.message);
+                    document.getElementById('startOverlay').classList.remove('hidden');
+                    clearInterval(tmInt);
+                });
+            });
+        } catch(e) {
+            alert('Camera initialization error: ' + e.message);
+            document.getElementById('startOverlay').classList.remove('hidden');
+            clearInterval(tmInt);
+        }
+    } else {
+        camera.start().catch(e => alert('Camera restart error: ' + e.message));
+    }
 };
 
 document.getElementById('stopBtn').onclick=()=>{
