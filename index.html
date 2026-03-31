@@ -593,6 +593,31 @@
         .btn-cancel:hover { color: var(--text); }
 
         /* ═══════════════════════════════════════
+           COACH SCREEN & CHAT
+        ═══════════════════════════════════════ */
+        #coach-screen { padding: 0; display: flex; flex-direction: column; height: 100%; }
+        .coach-header { padding: 28px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .coach-header h1 { font-family: var(--font-display); font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .chat-container { flex: 1; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 16px; }
+        .chat-msg { max-width: 80%; padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+        .chat-msg.user { align-self: flex-end; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-bottom-right-radius: 4px; }
+        .chat-msg.bot { align-self: flex-start; background: rgba(232,25,44,0.1); border: 1px solid rgba(232,25,44,0.3); color: white; border-bottom-left-radius: 4px; }
+        .chat-input-area { padding: 20px 28px; background: var(--bg2); border-top: 1px solid var(--border); display: flex; gap: 12px; flex-shrink: 0; }
+        .chat-input { flex: 1; background: var(--bg); border: 1px solid var(--border); padding: 14px 20px; border-radius: 30px; color: var(--text); font-family: var(--font-body); outline: none; transition: 0.2s; }
+        .chat-input:focus { border-color: var(--red); }
+        .chat-send-btn { background: var(--red); border: none; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .chat-send-btn:hover { background: var(--red-dark); transform: scale(1.05); }
+        .chat-send-btn svg { width: 20px; height: 20px; fill: white; }
+
+        .install-btn {
+            background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+            padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;
+            font-family: var(--font-body); display: none; align-items: center; gap: 8px;
+        }
+        .install-btn:hover { background: var(--surface); color: white; }
+        .install-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        /* ═══════════════════════════════════════
            MOBILE RESPONSIVE
         ═══════════════════════════════════════ */
         .mobile-nav { display: none; }
@@ -615,6 +640,10 @@
             .mn-link svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
             #home-screen { padding: 20px; padding-bottom: 80px; }
             #history-screen { padding: 20px; padding-bottom: 80px; }
+            #coach-screen { padding-bottom: 70px; }
+            .chat-container { padding: 20px; }
+            .chat-input-area { padding: 16px 20px; padding-bottom: 20px; }
+            .coach-header { padding: 20px; }
             .dashboard-grid { grid-template-columns: 1fr 1fr; }
             .progress-ring-card { grid-row: auto; grid-column: 1 / 3; }
             .activity-card { grid-column: 1 / 3; }
@@ -653,7 +682,7 @@
             <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
             History
         </div>
-        <div class="nav-link" onclick="document.getElementById('goalModal').classList.add('active')">
+        <div class="nav-link" data-tab="coach">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
             Coach
         </div>
@@ -681,10 +710,16 @@
                 <h1>Dashboard</h1>
                 <p id="welcomeDate">Welcome back — let's crush it today</p>
             </div>
-            <button class="start-training-btn" onclick="switchTab('track')">
-                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                ⊞ START TRAINING ▶
-            </button>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <button class="install-btn" id="installBtn">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    Download App
+                </button>
+                <button class="start-training-btn" onclick="switchTab('track')">
+                    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    ⊞ START TRAINING ▶
+                </button>
+            </div>
         </div>
 
         <div class="dashboard-grid">
@@ -768,6 +803,22 @@
                     <div class="hm-legend">Less Frequent (Deep Red) → More Frequent (Neon Red)</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ── COACH SCREEN ── -->
+    <div id="coach-screen" class="screen">
+        <div class="coach-header">
+            <h1>AI Coach Session</h1>
+        </div>
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-msg bot">Hi! I'm your AI Coach. I can help with form correction, workout splits, and simple diet plans. How can I help you today?</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Ask about workout, diet, form..." onkeypress="if(event.key==='Enter') handleChat()">
+            <button class="chat-send-btn" onclick="handleChat()">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
         </div>
     </div>
 
@@ -924,7 +975,7 @@
         <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
         <span>History</span>
     </div>
-    <div class="mn-link" onclick="document.getElementById('goalModal').classList.add('active')">
+    <div class="mn-link" data-tab="coach">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
         <span>Coach</span>
     </div>
@@ -955,6 +1006,66 @@ function switchTab(tabId) {
 document.querySelectorAll('.nav-link, .mn-link').forEach(link=>{
     if(link.dataset.tab) link.addEventListener('click',()=>switchTab(link.dataset.tab));
 });
+
+/* ─── PWA INSTALL LOGIC ─── */
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const installBtn = document.getElementById('installBtn');
+    if (installBtn) {
+        installBtn.style.display = 'flex';
+        installBtn.addEventListener('click', () => {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => {
+                deferredPrompt = null;
+                installBtn.style.display = 'none';
+            });
+        });
+    }
+});
+
+/* ─── AI COACH CHATBOT ─── */
+function handleChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    appendMsg('user', msg);
+    input.value = '';
+
+    const lowerMsg = msg.toLowerCase();
+    let response = "sorry pa athuku ithu edam illa";
+
+    const gymKeywords = ['workout', 'split', 'diet', 'nutrition', 'protein', 'pushup', 'form', 'gym', 'exercise', 'training', 'muscle', 'reps', 'sets', 'plan', 'routine', 'weight', 'fat', 'carb', 'calories'];
+    
+    if (gymKeywords.some(kw => lowerMsg.includes(kw))) {
+        if (lowerMsg.includes('form') || lowerMsg.includes('pushup') || lowerMsg.includes('correction')) {
+            response = "For perfect pushup form: Keep your core tight, hands slightly wider than shoulder-width, and lower your body until your chest nearly touches the floor. Don't arch your back!";
+        } else if (lowerMsg.includes('split') || lowerMsg.includes('workout') || lowerMsg.includes('routine')) {
+            response = "A great beginner split is Push/Pull/Legs (PPL) or a 3-day Full Body routine. Make sure to progressively overload and rest adequately.";
+        } else if (lowerMsg.includes('diet') || lowerMsg.includes('protein') || lowerMsg.includes('nutrition') || lowerMsg.includes('carb') || lowerMsg.includes('calories')) {
+            response = "For a simple diet: Focus on high protein (1.6g-2g per kg of bodyweight), complex carbs for energy, and healthy fats. Stay in a caloric deficit to lose weight, or surplus to build muscle.";
+        } else {
+            response = "That's a great fitness question! Remember consistency, progressive overload, and proper recovery are the keys to reaching your goals.";
+        }
+    }
+
+    if (lowerMsg.includes('briyani') || lowerMsg.includes('biryani') || lowerMsg.includes('movie') || lowerMsg.includes('politics')) {
+        response = "sorry pa athuku ithu edam illa";
+    }
+
+    setTimeout(() => appendMsg('bot', response), 400);
+}
+
+function appendMsg(sender, text) {
+    const chatContainer = document.getElementById('chatContainer');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-msg ' + sender;
+    msgDiv.textContent = text;
+    chatContainer.appendChild(msgDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
 
 /* ─── DASHBOARD RENDER ─── */
 function renderDashboard() {
